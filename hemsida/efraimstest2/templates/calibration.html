@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibration</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href='https://fonts.googleapis.com/css?family=Dancing Script' rel='stylesheet'>
+</head>
+<body>
+    <div class="background-image"></div>
+    <div id="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {% if category == 'success' %}alert-success{% else %}alert-error{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>    
+    <nav>
+        <a href='#' class="website-name">Dodgeball Throw Analyzer</a>
+        <ul>
+            <li class="{{ 'active' if request.endpoint == 'home' }}"><a href="/">Home</a></li>
+            <li class="{{ 'active' if request.endpoint == 'my_page' }}"><a href="/my-page">My Page</a></li>
+            <li class="{{ 'active' if request.endpoint == 'calibration' }}"><a href="/calibration">Calibration</a></li>
+            <li class="{{ 'active' if request.endpoint == 'measure' }}"><a href="/measure">Measure Throw</a></li>
+            <li class="{{ 'active' if request.endpoint == 'how_it_works' }}"><a href="/how-it-works">How does it work?</a></li>
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login', next=request.path) }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="container">
+        <h1>Calibration</h1>
+        <p>Before you can accurately measure your dodgeball throws, you need to calibrate your camera setup. Calibration ensures that the measurements taken by our system are precise and tailored to your specific setup.</p>
+
+        <h2>Calibration Process</h2>
+        <p>Follow these steps to calibrate your camera setup:</p>
+        <ol>
+            <li style="margin-bottom: 4px;">Hold a dodgeball at the center of the target on the wall, making sure it is clearly visible from both cameras.</li>
+            <li style="margin-bottom: 4px;">Simultaneously record a short video (5 seconds is sufficient) of the dodgeball from each camera, making sure that the entire object is visible in the frame. Both cameras should capture footage during the same 5-second time frame, but their recordings should be separate.</li>
+            <li style="margin-bottom: 4px;">Upload the calibration videos from each camera using the form below.</li>
+            <li>After uploading the videos, our system will analyze the footage and calculate the necessary calibration parameters for your camera setup.</li>
+        </ol>
+        <p>Once calibration is complete, you can proceed to measure your dodgeball throws.</p>
+
+        <h2>Upload Calibration Videos</h2>
+        <form action="/calibration" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="sideCamera">Side Camera: </label>
+                <input type="file" class="form-control-file" id="sideCamera" name="sideCamera" required>
+                <small class="form-text text-muted" style="font-size: 10px;">(Accepted formats: .mp4, .mov, .avi)</small>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="underneathCamera">Bottom Camera:</label>
+                <input type="file" class="form-control-file" id="underneathCamera" name="underneathCamera" required>
+                <small class="form-text text-muted" style="font-size: 10px;">(Accepted formats: .mp4, .mov, .avi)</small>
+            </div>
+            <button type="submit" id="calibrate-btn">Calibrate</button>
+        </form>
+    </div>
+    <script>
+        function initFlashMessagesObserver() {
+          const flashMessages = document.getElementById('flash-messages');
+          const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+              if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                while (mutation.target.firstElementChild !== mutation.addedNodes[0]) {
+                  mutation.target.firstElementChild.remove();
+                }
+              }
+            });
+          });
+      
+          observer.observe(flashMessages, { childList: true });
+        }
+      
+        function addButtonLoader(button, form) {
+            form.addEventListener('submit', function () {
+                button.innerHTML += `<span class="loader-container"><div class="loader"></div></span>`;
+                button.classList.add('loading');
+                button.disabled = true;
+            });
+        }
+
+      
+        document.addEventListener('DOMContentLoaded', function () {
+          initFlashMessagesObserver();
+      
+          const pathname = window.location.pathname;
+      
+          if (pathname === '/calibration') {
+            const calibrateBtn = document.getElementById('calibrate-btn');
+            const calibrateForm = document.querySelector('form[method="POST"][action="/calibration"]');
+            addButtonLoader(calibrateBtn, calibrateForm);
+          } else if (pathname === '/measure') {
+            const measureBtn = document.getElementById('measure-btn');
+            const measureForm = document.querySelector('form[method="POST"][action="/measure"]');
+            addButtonLoader(measureBtn, measureForm);
+          }
+        });
+    </script>
+</body>
+</html>

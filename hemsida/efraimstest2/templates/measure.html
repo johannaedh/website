@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Measure</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href='https://fonts.googleapis.com/css?family=Dancing Script' rel='stylesheet'>
+</head>
+<body>
+    <div class="background-image"></div>
+    <div id="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {% if category == 'success' %}alert-success{% else %}alert-error{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>        
+    <nav>
+        <a href="#" class="website-name">Dodgeball Throw Analyzer</a>
+        <ul>
+            <li class="{{ 'active' if request.endpoint == 'home' }}"><a href="/">Home</a></li>
+            <li class="{{ 'active' if request.endpoint == 'my_page' }}"><a href="/my-page">My Page</a></li>
+            <li class="{{ 'active' if request.endpoint == 'calibration' }}"><a href="/calibration">Calibration</a></li>
+            <li class="{{ 'active' if request.endpoint == 'measure' }}"><a href="/measure">Measure Throw</a></li>
+            <li class="{{ 'active' if request.endpoint == 'how_it_works' }}"><a href="/how-it-works">How does it work?</a></li>
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login', next=request.path) }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="container">
+        <h1>Measure Throw</h1>
+        <p>To accurately gauge your dodgeball throw, please upload videos captured from both side and bottom perspectives, and include the frame rate for the videos. Our system will analyze the videos and provide you with the velocity, as well as the accuracy of your throw relative to the target.</p>
+        <h2>Upload Throw Videos</h2>
+        <form action="/measure" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file1">Side Camera:</label>
+                <input type="file" id="file1" name="file1" class="form-control-file" accept=".mp4, .mov, .avi" required>
+                <small class="form-text text-muted" style="font-size: 10px;">(Accepted formats: .mp4, .mov, .avi)</small>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="file2">Bottom Camera:</label>
+                <input type="file" id="file2" name="file2" class="form-control-file" accept=".mp4, .mov, .avi" required>
+                <small class="form-text text-muted" style="font-size: 10px;">(Accepted formats: .mp4, .mov, .avi)</small>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="frame_rate">Frame rate (fps):</label>
+                <input type="number" id="frame_rate" name="frame_rate" class="form-control" required>
+            </div>
+            <button type="submit" id="measure-btn">Measure</button>
+        </form>
+        {% if throw_info.velocity is not none and throw_info.accuracy_x is not none and throw_info.accuracy_y is not none and throw_info.total_distance is not none %}
+        <div class="results-container">
+            <div class="results-text">
+                <h3>Throw Results:</h3>
+                <p>Velocity: {{ throw_info.velocity }} km/h</p>
+                <p>Distance from center: {{ throw_info.total_distance }} cm</p>
+            </div>
+            <div class="svg-container">
+                <svg height="450" width="450">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:rgb(181, 179, 179);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(0, 0, 0);stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="225" cy="225" r="200" fill="white" stroke="black" />
+                    <circle cx="225" cy="225" r="180" fill="white" stroke="black" />
+                    <circle cx="225" cy="225" r="160" fill="black" stroke="black" />
+                    <circle cx="225" cy="225" r="140" fill="black" stroke="white" />
+                    <circle cx="225" cy="225" r="120" fill="deepskyblue" stroke="black" />
+                    <circle cx="225" cy="225" r="100" fill="deepskyblue" stroke="black" />
+                    <circle cx="225" cy="225" r="80" fill="red" stroke="black" />
+                    <circle cx="225" cy="225" r="60" fill="red" stroke="black" />
+                    <circle cx="225" cy="225" r="40" fill="yellow" stroke="black" />
+                    <circle cx="225" cy="225" r="20" fill="yellow" stroke="black" />
+                    <circle cx="225" cy="225" r="1" fill="black" />
+                    <circle cx="{{ 225 + (throw_info.accuracy_x * 2) }}" cy="{{ 225 - (throw_info.accuracy_y * 2) }}" r="6" fill="url(#grad1)" stroke="white" />
+                    <line x1="25" y1="20" x2="425" y2="20" stroke="black" stroke-width="2" />
+                    <text x="205" y="12" font-size="14px" fill="black">200 cm</text>
+                    <line x1="20" y1="25" x2="20" y2="425" stroke="black" stroke-width="2" />
+                    <text x="15" y="245" font-size="14px" fill="black" transform="rotate(-90,15,245)">200 cm</text>
+                </svg>
+            </div>
+        </div>
+        <h3>Throw Visualization</h3>
+        <div class="throw-gif-container">
+            <div class="throw-gif-wrapper">
+                <p class="camera-label">Side Camera</p>
+                <img class="throw-gif" id="side-view" src="data:image/gif;base64,{{ frames_side_base64 }}" alt="Side Camera GIF">
+            </div>
+            <div class="throw-gif-wrapper">
+                <p class="camera-label">Bottom Camera</p>
+                <img class="throw-gif" id="floor-view" src="data:image/gif;base64,{{ frames_floor_base64 }}" alt="Bottom Camera GIF">
+            </div>
+        </div>        
+        {% endif %}
+    </div>
+    <script>
+        function initFlashMessagesObserver() {
+          const flashMessages = document.getElementById('flash-messages');
+          const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+              if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                while (mutation.target.firstElementChild !== mutation.addedNodes[0]) {
+                  mutation.target.firstElementChild.remove();
+                }
+              }
+            });
+          });
+      
+          observer.observe(flashMessages, { childList: true });
+        }
+      
+        function addButtonLoader(button, form) {
+          form.addEventListener('submit', function () {
+            button.innerHTML = `${button.textContent} <span class="loader-container"><div class="loader"></div></span>`;
+            button.classList.add('loading');
+            button.disabled = true;
+          });
+        }
+      
+        document.addEventListener('DOMContentLoaded', function () {
+          initFlashMessagesObserver();
+      
+          const pathname = window.location.pathname;
+      
+          if (pathname === '/calibration') {
+            const calibrateBtn = document.getElementById('calibrate-btn');
+            const calibrateForm = document.querySelector('form[method="POST"][action="/calibration"]');
+            addButtonLoader(calibrateBtn, calibrateForm);
+          } else if (pathname === '/measure') {
+            const measureBtn = document.getElementById('measure-btn');
+            const measureForm = document.querySelector('form[method="POST"][action="/measure"]');
+            addButtonLoader(measureBtn, measureForm);
+          }
+        });
+    </script>
+    <script>
+        const framesSide = {{ frames_side_base64|tojson }};
+        const framesFloor = {{ frames_floor_base64|tojson }};
+        const gifDuration = 3000;  // Adjust this value to set the desired duration for both GIFs in milliseconds
+        let sideFrameIndex = 0;
+        let floorFrameIndex = 0;
+
+        const sideView = document.getElementById("side-view");
+        const floorView = document.getElementById("floor-view");
+
+        function updateFrame() {
+            sideView.src = 'data:image/png;base64,' + framesSide[sideFrameIndex];
+            floorView.src = 'data:image/png;base64,' + framesFloor[floorFrameIndex];
+        }
+
+        function updateFrames(timestamp) {
+            const sideProgress = (timestamp % gifDuration) / gifDuration;
+            const floorProgress = (timestamp % gifDuration) / gifDuration;
+
+            const newSideFrameIndex = Math.floor(sideProgress * framesSide.length);
+            const newFloorFrameIndex = Math.floor(floorProgress * framesFloor.length);
+
+            if (newSideFrameIndex !== sideFrameIndex) {
+                sideFrameIndex = newSideFrameIndex;
+                updateFrame();
+            }
+
+            if (newFloorFrameIndex !== floorFrameIndex) {
+                floorFrameIndex = newFloorFrameIndex;
+                updateFrame();
+            }
+
+            requestAnimationFrame(updateFrames);
+        }
+
+        requestAnimationFrame(updateFrames);
+    </script>
+    <!-- Add this script tag at the end of the body tag -->
+    <script>
+        // When the page loads, check if there are frames in the local storage
+        document.addEventListener('DOMContentLoaded', function() {
+            let framesSide = localStorage.getItem('framesSide');
+            let framesFloor = localStorage.getItem('framesFloor');
+
+            if (framesSide && framesFloor) {
+                framesSide = JSON.parse(framesSide);
+                framesFloor = JSON.parse(framesFloor);
+                const imgSide = document.getElementById('side-throw');
+                const imgFloor = document.getElementById('floor-throw');
+
+                if (framesSide.length > 0) {
+                    imgSide.src = 'data:image/jpeg;base64,' + framesSide[0];
+                }
+
+                if (framesFloor.length > 0) {
+                    imgFloor.src = 'data:image/jpeg;base64,' + framesFloor[0];
+                }
+            }
+        });
+
+        // When the measure button is clicked, store the frames in the local storage
+        document.getElementById('measure-btn').addEventListener('click', function() {
+            let framesSide = {{ frames_side_base64|tojson }};
+            let framesFloor = {{ frames_floor_base64|tojson }};
+
+            if (framesSide && framesFloor) {
+                localStorage.setItem('framesSide', JSON.stringify(framesSide));
+                localStorage.setItem('framesFloor', JSON.stringify(framesFloor));
+            }
+        });
+    </script>
+</body>
+</html>

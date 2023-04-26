@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Satisfy&display=swap" />
+</head>
+<body>
+    <div class="background-image"></div>
+    <div class="container">
+        <h1>My Page</h1>
+        
+        <h2>Calibrations</h2>
+        <ul>
+            {% for calibration in current_user.calibrations %}
+                <li>
+                    <span>{{ calibration.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                    {% if calibration.id == current_user.selected_calibration_id %}
+                        (Selected)
+                    {% else %}
+                        <a href="{{ url_for('select_calibration', calibration_id=calibration.id) }}">Select</a>
+                    {% endif %}
+                    <a href="{{ url_for('delete_calibration', calibration_id=calibration.id) }}">Delete</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <h2>Throw Measurements</h2>
+        <ul>
+            {% for throw in current_user.throws %}
+                <li>
+                    <span>{{ throw.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <a href="{{ url_for('view_throw', throw_id=throw.id) }}">View</a>
+                    <a href="{{ url_for('delete_throw', throw_id=throw.id) }}">Delete</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
