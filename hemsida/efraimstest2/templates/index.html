@@ -26,7 +26,7 @@
             <li class="{{ 'active' if request.endpoint == 'home' }}"><a href="/">Home</a></li>
             <li class="{{ 'active' if request.endpoint == 'my_page' }}"><a href="/my-page">My Page</a></li>
             <li class="{{ 'active' if request.endpoint == 'calibration' }}"><a href="/calibration">Calibration</a></li>
-            <li class="{{ 'active' if request.endpoint == 'measure' }}"><a href="/measure">Measure Throw</a></li>
+            <li class="{{ 'active' if request.endpoint == 'measure' }}"><a href="/website/hemsida/efraimstest2/templates/measure">Measure Throw</a></li>
             <li class="{{ 'active' if request.endpoint == 'how_it_works' }}"><a href="/website/hemsida/efraimstest2/templates/how_it_works">How does it work?</a></li>
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
