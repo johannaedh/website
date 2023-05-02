@@ -18,9 +18,9 @@
             <li class="{{ 'active' if request.endpoint == 'measure' }}"><a href="/website/hemsida/efraimstest2/templates/measure">Measure Throw</a></li>
             <li class="{{ 'active' if request.endpoint == 'how_it_works' }}"><a href="/website/hemsida/efraimstest2/templates/how_it_works">How does it work?</a></li>
             {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                <li><a href="/website/hemsida/efraimstest2/templates/">Logout</a></li>
             {% else %}
-                <li><a href="{{ url_for('login', next=request.path) }}">Login</a></li>
+                <li><a href="/website/hemsida/efraimstest2/templates/login">Login</a></li>
             {% endif %}
         </ul>
     </nav>    
